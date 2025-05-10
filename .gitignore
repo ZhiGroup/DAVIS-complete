@@ -1,0 +1,6 @@
+*.pyc
+*.aln
+*.npy
+*.pt
+data/*
+
