@@ -159,15 +159,15 @@ def create_full_ood_set(df, fold_seed, frac):
     drugs and proteins (random split).
     """
     train_frac, val_frac, test_frac = frac
-    test_drugs = df['drug'].drop_duplicates().sample(frac=test_frac, replace=False, random_state=fold_seed).values
+    test_drugs = df['drug_name'].drop_duplicates().sample(frac=test_frac, replace=False, random_state=fold_seed).values
     test_prots = df['protein'].drop_duplicates().sample(frac=test_frac, replace=False, random_state=fold_seed).values
 
-    test = df[(df['drug'].isin(test_drugs)) & (df['protein'].isin(test_prots))]
+    test = df[(df['drug_name'].isin(test_drugs)) & (df['protein'].isin(test_prots))]
     test_mutation = test[test['protein'].str.contains("_[a-z][0-9]") | test['protein'].str.contains("itd") | test['protein'].str.contains("s808g")]
     test_wt = test[~test.index.isin(test_mutation.index)]
 
 
-    train_val = df[(~df['drug'].isin(test_drugs)) & (~df['protein'].isin(test_prots))]
+    train_val = df[(~df['drug_name'].isin(test_drugs)) & (~df['protein'].isin(test_prots))]
 
     val = train_val.sample(frac=val_frac/(1-test_frac), replace=False, random_state=fold_seed)
     train = train_val[~train_val.index.isin(val.index)]

@@ -3,4 +3,4 @@
 *.npy
 *.pt
 data/*
-
+.tar.gz

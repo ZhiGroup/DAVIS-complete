@@ -57,7 +57,7 @@ class Dataset(Dataset):
         if self.split_method == 'random':
             self.split_df = create_fold(df, self.seed, split_frac)
         elif self.split_method == 'drug':
-            self.split_df = create_fold_setting_cold(df, self.seed, split_frac, 'drug')
+            self.split_df = create_fold_setting_cold(df, self.seed, split_frac, 'drug_name')
         elif self.split_method == 'protein':
             self.split_df = create_fold_setting_cold(df, self.seed, split_frac, 'protein')
         elif self.split_method == 'both':
