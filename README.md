@@ -28,7 +28,7 @@ wget https://zenodo.org/records/15391611/files/davis_complete.tar.gz?download=1
 tar -xvzf davis_complete.tar.gz?download=1
 cd ../
 ```
-Download the DGraphDTA processed data for replicating the benchmark results
+Download the DGraphDTA processed data for replicating the benchmark results from [zenodo](https://zenodo.org/records/15391611/files/dgraphdta_data.tar.gz?download=1)
 ```
 cd docking_free_models/DGraphDTA/
 wget https://zenodo.org/records/15391611/files/dgraphdta_data.tar.gz?download=1
@@ -39,7 +39,7 @@ cd ../
 
  
 ## Replicate results
-### Augmented Prediction
+### Augmented Dataset Prediction
 For docking-free based methods, the following command is used to train MGraphDTA, DGraphDTA, GraphDTA, AttentionDTA, and GraphDTA to predict binding affinity under different split_methods (both, drug, protein, and seqid).
 ```
 cd docking_free_models
