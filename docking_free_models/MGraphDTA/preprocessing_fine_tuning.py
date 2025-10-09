@@ -51,15 +51,15 @@ class GNNDataset(InMemoryDataset):
         super().__init__(root, transform, pre_transform, pre_filter)
         
         if split == 'all':
-            self.data, self.slices = torch.load(self.processed_paths[0])
+            self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
         elif split == 'train':
-            self.data, self.slices = torch.load(self.processed_paths[1])
+            self.data, self.slices = torch.load(self.processed_paths[1], weights_only=False)
         elif split == 'test':
-            self.data, self.slices = torch.load(self.processed_paths[2])
+            self.data, self.slices = torch.load(self.processed_paths[2], weights_only=False)
         elif split == 'wt_all':
-            self.data, self.slices = torch.load(self.processed_paths[3])
+            self.data, self.slices = torch.load(self.processed_paths[3], weights_only=False)
         elif split == 'wt_test':
-            self.data, self.slices = torch.load(self.processed_paths[4])
+            self.data, self.slices = torch.load(self.processed_paths[4], weights_only=False)
         else:
             raise ValueError("Unknown split: {}".format(split))
 

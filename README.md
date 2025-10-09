@@ -40,7 +40,7 @@ cd ../
  
 ## Replicate results
 ### Augmented Dataset Prediction
-For docking-free based methods, the following command is used to train MGraphDTA, DGraphDTA, GraphDTA, AttentionDTA, and GraphDTA to predict binding affinity under different split_methods (both, drug, protein, and seqid).
+For docking-free based methods, the following command is used to train MGraphDTA, DGraphDTA, GraphDTA, AttentionDTA, and GraphDTA to predict binding affinity under different split_methods (drug_name, drug_structure, protein_modification, protein_name, protein_seqid, protein_modification_drug_name, protein_seqid_drug_structure).
 ```
 cd docking_free_models
 python train_script_benchmark.py --split_method both --gpu 3 --model_seeds 0 1 2 3 4 --model_name MGraphDTA

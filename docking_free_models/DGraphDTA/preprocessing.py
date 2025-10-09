@@ -10,7 +10,7 @@ import networkx as nx
 from torch_geometric.data import InMemoryDataset
 from torch_geometric import data as DATA
 from utils import *
-from kdbnet.dta_davis_complete import create_fold, create_fold_setting_cold, create_full_ood_set, create_seq_identity_fold, create_wt_mutation_split
+from kdbnet.dta_davis_complete import create_fold, create_fold_setting_cold, create_full_ood_set, create_seq_identity_fold, create_wt_mutation_split, create_new_drug_tanimoto, create_new_protein_name, create_seq_identity_drug_tanimoto_fold
 import pickle
 from tqdm import tqdm
 import pickle
@@ -355,13 +355,19 @@ class GNNDataset(InMemoryDataset):
 
         if self.split_method == 'random':
             split_df = create_fold(df, self.seed, split_frac)
-        elif self.split_method == 'drug':
-            split_df = create_fold_setting_cold(df, self.seed, split_frac, 'drug_name')
-        elif self.split_method == 'protein':
+        elif self.split_method == 'drug_name':
+            split_df = create_fold_setting_cold(df, self.seed, split_frac, 'drug')
+        elif self.split_method == 'drug_structure':
+            split_df = create_new_drug_tanimoto(df, self.seed, split_frac)
+        elif self.split_method == 'protein_modification':
             split_df = create_fold_setting_cold(df, self.seed, split_frac, 'protein')
-        elif self.split_method == 'both':
+        elif self.split_method == 'protein_name':
+            split_df = create_new_protein_name(df, self.seed, split_frac)
+        elif self.split_method == 'protein_modification_drug_name':
             split_df = create_full_ood_set(df, self.seed, split_frac)
-        elif self.split_method == 'seqid':
+        elif self.split_method == 'protein_seqid_drug_structure':
+            split_df = create_seq_identity_drug_tanimoto_fold(df, self.mmseqs_seq_clus_df, self.seed, split_frac)
+        elif self.split_method == 'protein_seqid':
             split_df = create_seq_identity_fold(df, self.mmseqs_seq_clus_df, self.seed, split_frac)
         elif self.split_method == 'wt_mutation':
             split_df = create_wt_mutation_split(df, self.seed, [0.9, 0.1])

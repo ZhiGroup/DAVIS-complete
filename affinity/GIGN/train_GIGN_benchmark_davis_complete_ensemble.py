@@ -175,9 +175,9 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--split_method', type=str, default=None)
     parser.add_argument('--gpu', type=int, default=1)
-    parser.add_argument('--data_df', type=str, default='../../data/davis_complete/davis_complete.tsv', help='data of protein and ligand')
+    parser.add_argument('--data_df', type=str, default='../../data/davis_complete/davis_complete_with_smiles.tsv', help='data of protein and ligand')
     parser.add_argument('--complex_path', type=str, default='../../data/davis_complete/alphafold_structure_kinase_domain', help='the path of the complexes')
-    parser.add_argument('--mmseqs_seq_clus_df', type=str, default='../../data/davis_complete/davis_cluster_id50_cluster.tsv', help='the path of mmseqs seq clus')
+    parser.add_argument('--mmseqs_seq_clus_df', type=str, default='../../data/davis_complete/davis_complete_id50_cluster.tsv', help='the path of mmseqs seq clus')
     parser.add_argument('--ensemble_size', type=int, default=5)
     parser.add_argument('--job_name', type=str, default='benchmark_davis_ensemble')
     parser.add_argument('--seeds', nargs='+', type=int, help='List of seeds for the repeats')
@@ -202,11 +202,11 @@ if __name__ == '__main__':
         test_wt_set = GraphDataset(data_root, data_df, split_method=args_.split_method, split='test_wt', graph_type='Graph_GIGN', dis_threshold=5, create=False, seed=seed, mmseqs_seq_clus_df=args_.mmseqs_seq_clus_df)
         test_mutation_set = GraphDataset(data_root, data_df, split_method=args_.split_method, split='test_mutation', graph_type='Graph_GIGN', dis_threshold=5, create=False, seed=seed, mmseqs_seq_clus_df=args_.mmseqs_seq_clus_df)
 
-        train_loader = PLIDataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=4, multiprocessing_context=get_context('loky'))
-        valid_loader = PLIDataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=4, multiprocessing_context=get_context('loky'))
-        test_loader = PLIDataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4, multiprocessing_context=get_context('loky'))
-        test_wt_loader = PLIDataLoader(test_wt_set, batch_size=batch_size, shuffle=False, num_workers=4, multiprocessing_context=get_context('loky'))
-        test_mutation_loader = PLIDataLoader(test_mutation_set, batch_size=batch_size, shuffle=False, num_workers=4, multiprocessing_context=get_context('loky'))
+        train_loader = PLIDataLoader(train_set, batch_size=batch_size, shuffle=True)
+        valid_loader = PLIDataLoader(val_set, batch_size=batch_size, shuffle=False)
+        test_loader = PLIDataLoader(test_set, batch_size=batch_size, shuffle=False)
+        test_wt_loader = PLIDataLoader(test_wt_set, batch_size=batch_size, shuffle=False)
+        test_mutation_loader = PLIDataLoader(test_mutation_set, batch_size=batch_size, shuffle=False)
         
 
         logger.info(f"this is the seed {seed}")
@@ -274,11 +274,11 @@ if __name__ == '__main__':
         test_wt_set = GraphDataset(data_root, data_df, split_method=args_.split_method, split='test_wt', graph_type='Graph_GIGN', dis_threshold=5, create=False, seed=seed, mmseqs_seq_clus_df=args_.mmseqs_seq_clus_df)
         test_mutation_set = GraphDataset(data_root, data_df, split_method=args_.split_method, split='test_mutation', graph_type='Graph_GIGN', dis_threshold=5, create=False, seed=seed, mmseqs_seq_clus_df=args_.mmseqs_seq_clus_df)
 
-        train_loader = PLIDataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=4, multiprocessing_context=get_context('loky'))
-        valid_loader = PLIDataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=4, multiprocessing_context=get_context('loky'))
-        test_loader = PLIDataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4, multiprocessing_context=get_context('loky'))
-        test_wt_loader = PLIDataLoader(test_wt_set, batch_size=batch_size, shuffle=False, num_workers=4, multiprocessing_context=get_context('loky'))
-        test_mutation_loader = PLIDataLoader(test_mutation_set, batch_size=batch_size, shuffle=False, num_workers=4, multiprocessing_context=get_context('loky'))
+        train_loader = PLIDataLoader(train_set, batch_size=batch_size, shuffle=True)
+        valid_loader = PLIDataLoader(val_set, batch_size=batch_size, shuffle=False)
+        test_loader = PLIDataLoader(test_set, batch_size=batch_size, shuffle=False)
+        test_wt_loader = PLIDataLoader(test_wt_set, batch_size=batch_size, shuffle=False)
+        test_mutation_loader = PLIDataLoader(test_mutation_set, batch_size=batch_size, shuffle=False)
 
 
         models = [GIGN(35, 256).to(device) for _ in range(args_.ensemble_size)]

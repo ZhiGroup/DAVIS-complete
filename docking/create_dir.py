@@ -9,16 +9,16 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
      
     parser.add_argument('--data_dir', type=str, default='data/benchmark/',
-                        help='the name of complex dir')
+                        help='the path to the data dir')
 
     parser.add_argument('--complex_dir_name', type=str, default='complex',
-                        help='the name of complex dir')
+                        help='the path to the complex dir')
 
     parser.add_argument('--protein_dir_name', type=str, default='davis_colabfold_protein',
-                        help='the name of protein dir')
+                        help='the path to the protein dir')
     
     parser.add_argument('--ligand_dir_name', type=str, default='davis_ligand',
-                        help='the name of protein dir')
+                        help='the path to the ligand dir')
     
     parser.add_argument('--data_csv', type=str, default='davis_data.tsv',
                         help='the name of data csv file')

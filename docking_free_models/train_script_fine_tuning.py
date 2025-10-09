@@ -123,8 +123,8 @@ def val(model, dataloader, device, model_name):
             
     pred = np.concatenate(pred_list, axis=0).flatten()
     label = np.concatenate(label_list, axis=0).flatten()
-    coff = np.corrcoef(pred, label)[0, 1]
-    cindex = get_cindex(pred, label)
+    coff = np.corrcoef(label, pred)[0, 1]
+    cindex = get_cindex(label, pred)
     mse = mean_squared_error(label, pred)
     rmse = np.sqrt(mean_squared_error(label, pred))
     
@@ -153,10 +153,10 @@ def val_wt_groundtruth_baseline(wt_affinity, dataloader, model_name):
     else:
         assert len(label) == len(wt_affinity)
 
-    coff = np.corrcoef(wt_affinity, label)[0, 1]
+    coff = np.corrcoef(label, wt_affinity)[0, 1]
     mse = mean_squared_error(label, wt_affinity)
     rmse = np.sqrt(mean_squared_error(label, wt_affinity))
-    cindex = get_cindex(wt_affinity, label)
+    cindex = get_cindex(label, wt_affinity)
     
     return mse, rmse, coff, cindex
 def get_mutation_name(data_df, protein_name):
@@ -290,7 +290,7 @@ if __name__ == '__main__':
     all_std_test_cindex_finetuning = []
     
     protein = ['abl1', 'braf', 'egfr', 'fgfr3', 'flt3', 'kit', 'lrrk2', 'met', 'pik3ca', 'ret'] 
-    ligand = list(pd.read_csv('/data/mwu11/FDA/data/davis_complete/davis_inhibitor_binding_mode.csv')['Compound'])
+    ligand = list(pd.read_csv('../data/davis_complete/davis_inhibitor_binding_mode.csv')['Compound'])
     drug_type = ['Type I', 'Type II', 'undetermined']
     drug_1_type = ['Type I', 'Type II', 'undetermined']
     drug_2_type = ['Type I', 'Type II', 'undetermined'] 
@@ -520,17 +520,22 @@ if __name__ == '__main__':
 
             if args.split_method == 'different_mutation_same_drug':
                 print(f'label: {label}')
+                print(f'label_all: {label_all}')
                 print(f'gt_wt: {wt_all_affinity}')
                 print(f'prediction_wt: {wt_all_prediction}')
                 print(f'prediction_original: {prediction_original}')
                 print(f'prediction_finetuning: {prediction_finetuning}')
+                print(f'prediction_original_all: {prediction_original_all}')
 
             elif args.split_method == 'same_mutation_different_drug':
                 print(f'label: {label}')
+                print(f'label_all: {label_all}')
                 print(f'gt_wt: {wt_test_affinity}')
+                print(f'gt_wt_all: {wt_all_affinity}')
                 print(f'prediction_wt: {wt_test_prediction}')
                 print(f'prediction_original: {prediction_original}')
                 print(f'prediction_finetuning: {prediction_finetuning}')
+                print(f'prediction_original_all: {prediction_original_all}')
 
             elif args.split_method == 'different_mutation_different_drug':
                 print(f'label: {label}')

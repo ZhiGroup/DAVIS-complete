@@ -121,8 +121,9 @@ def val(model, dataloader, device, model_name):
             
     pred = np.concatenate(pred_list, axis=0).flatten()
     label = np.concatenate(label_list, axis=0).flatten()
-    coff = np.corrcoef(pred, label)[0, 1]
-    cindex = get_cindex(pred, label)
+
+    coff = np.corrcoef(label, pred)[0, 1]
+    cindex = get_cindex(label, pred)
     mse = mean_squared_error(label, pred)
     rmse = np.sqrt(mean_squared_error(label, pred))
     
@@ -146,9 +147,8 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--gpu', type=int, default=0, help='gpu id')
     parser.add_argument('--model_name', choices=['MGraphDTA', 'DGraphDTA', 'GraphDTA', 'AttentionDTA', 'DeepDTA'], help='model name')
-    parser.add_argument('--data_root', type=str, default='data/davis_complete', help='data root')
     parser.add_argument('--data_df', type=str, default='davis_complete.csv', help='data of protein and ligand')
-    parser.add_argument('--split_method', choices=['random', 'drug', 'protein', 'both', 'seqid', 'wt_mutation'], help='split method')
+    parser.add_argument('--split_method', help='split method')
     parser.add_argument('--model_seeds', nargs='+', type=int, help='List of seeds for the repeats')
     parser.add_argument('--batch_size', type=int, default=16, help='batch_size')
     parser.add_argument('--epochs', type=int, default=1000)
@@ -191,6 +191,12 @@ if __name__ == '__main__':
         train_set = get_dataset(model_name=model_name, root=root, split_method=split_method, split='train', seed=model_seed, data_df=data_df)
         valid_set = get_dataset(model_name=model_name, root=root, split_method=split_method, split='valid', seed=model_seed, data_df=data_df)
         test_set = get_dataset(model_name=model_name, root=root, split_method=split_method, split='test', seed=model_seed, data_df=data_df)
+        
+        print(f"Model: {model_name}, Split Method: {split_method}, Seed: {model_seed}")
+        print(f"train set size: {len(train_set)}")
+        print(f"valid set size: {len(valid_set)}")
+        print(f"test set size: {len(test_set)}")
+        
         if not split_method == 'wt_mutation':
             test_wt_set = get_dataset(model_name=model_name, root=root, split_method=split_method, split='test_wt', seed=model_seed, data_df=data_df)
         test_mutation_set = get_dataset(model_name=model_name, root=root, split_method=split_method, split='test_mutation', seed=model_seed, data_df=data_df)
@@ -261,14 +267,35 @@ if __name__ == '__main__':
                 count = running_best_rmse.counter()
                 if count > early_stop_epoch:
                     best_rmse = running_best_rmse.get_best()
-                    msg = "best_rmse: %.4f" % best_mse
-                    logger.info(f"early stop in epoch {epoch}")
-                    logger.info(msg)
+                    msg = "best_rmse: %.4f" % best_rmse
+                    print(msg)
+                    # logger.info(f"early stop in epoch {epoch}")
+                    # logger.info(msg)
                     break_flag = True
                     break
+    
+
+    for model_seed in model_seeds:
+        
+        train_set = get_dataset(model_name=model_name, root=root, split_method=split_method, split='train', seed=model_seed, data_df=data_df)
+        valid_set = get_dataset(model_name=model_name, root=root, split_method=split_method, split='valid', seed=model_seed, data_df=data_df)
+        test_set = get_dataset(model_name=model_name, root=root, split_method=split_method, split='test', seed=model_seed, data_df=data_df)
+        print(f"test set size: {len(test_set)}")
+        
+        if not split_method == 'wt_mutation':
+            test_wt_set = get_dataset(model_name=model_name, root=root, split_method=split_method, split='test_wt', seed=model_seed, data_df=data_df)
+        test_mutation_set = get_dataset(model_name=model_name, root=root, split_method=split_method, split='test_mutation', seed=model_seed, data_df=data_df)
+        
+        test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, collate_fn=collate_fn) if model_name in ['AttentionDTA', 'DeepDTA'] else DataLoader(test_set, batch_size=batch_size, shuffle=False)
+        if not split_method == 'wt_mutation':
+            test_wt_loader = DataLoader(test_wt_set, batch_size=batch_size, shuffle=False, collate_fn=collate_fn) if model_name in ['AttentionDTA', 'DeepDTA'] else DataLoader(test_wt_set, batch_size=batch_size, shuffle=False)   
+        test_mutation_loader = DataLoader(test_mutation_set, batch_size=batch_size, shuffle=False, collate_fn=collate_fn) if model_name in ['AttentionDTA', 'DeepDTA'] else DataLoader(test_mutation_set, batch_size=batch_size, shuffle=False)
+        
+        model = get_model(model_name=model_name, device=device)
+
+        model_path = os.path.join(model_name, 'save', split_method, f'seed_{model_seed}.pt')
 
         load_model_dict(model, model_path, device)
-        valid_mse, valid_rmse, valid_rp, valid_cindex, _, _ = val(model, valid_loader, device, model_name)
         test_mse, test_rmse, test_rp, test_cindex, _, _ = val(model, test_loader, device, model_name)
         if not split_method == 'wt_mutation':
             test_wt_mse, test_wt_rmse, test_wt_rp, test_wt_cindex, _, _ = val(model, test_wt_loader, device, model_name)
@@ -285,6 +312,8 @@ if __name__ == '__main__':
         all_test_mutation_rp.append(test_mutation_rp)
         all_test_mutation_cindex.append(test_mutation_cindex)
 
+    
+    
     print(f"mean test mse: {np.mean(all_test_mse)}")
     print(f"std test mse: {np.std(all_test_mse)}")
     if not split_method == 'wt_mutation':
@@ -292,6 +321,7 @@ if __name__ == '__main__':
         print(f"std test_wt mse: {np.std(all_test_wt_mse)}")
     print(f"mean test_mutation mse: {np.mean(all_test_mutation_mse)}")
     print(f"std test_mutation mse: {np.std(all_test_mutation_mse)}")
+
     print(f"mean test rp: {np.mean(all_test_rp)}")
     print(f"std test rp: {np.std(all_test_rp)}")
     if not split_method == 'wt_mutation':
@@ -299,6 +329,14 @@ if __name__ == '__main__':
         print(f"std test_wt rp: {np.std(all_test_wt_rp)}")
     print(f"mean test_mutation rp: {np.mean(all_test_mutation_rp)}")
     print(f"std test_mutation rp: {np.std(all_test_mutation_rp)}")
+
+    print(f"mean test cindex: {np.mean(all_test_cindex)}")
+    print(f"std test cindex: {np.std(all_test_cindex)}")
+    if not split_method == 'wt_mutation':
+        print(f"mean test_wt cindex: {np.mean(all_test_wt_cindex)}")
+        print(f"std test_wt cindex: {np.std(all_test_wt_cindex)}")
+    print(f"mean test_mutation cindex: {np.mean(all_test_mutation_cindex)}")
+    print(f"std test_mutation cindex: {np.std(all_test_mutation_cindex)}")
 
 
     

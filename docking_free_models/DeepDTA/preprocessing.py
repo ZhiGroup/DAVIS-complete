@@ -11,7 +11,7 @@ from tqdm import tqdm
 from copy import deepcopy
 import logging
 import matplotlib.pyplot as plt
-from kdbnet.dta_davis_complete import create_fold, create_fold_setting_cold, create_full_ood_set, create_seq_identity_fold, create_wt_mutation_split
+from kdbnet.dta_davis_complete import create_fold, create_fold_setting_cold, create_full_ood_set, create_seq_identity_fold, create_wt_mutation_split, create_new_drug_tanimoto, create_new_protein_name, create_seq_identity_drug_tanimoto_fold
 
 
 class Dataset(Dataset):
@@ -29,7 +29,7 @@ class Dataset(Dataset):
         self.split = split
         self.split_method = split_method
         self.seed = seed
-        self.mmseqs_seq_clus_df = pd.read_table('../data/davis_complete/davis_complete_id50_cluster.tsv', names=['rep', 'seq'])
+        self.mmseqs_seq_clus_df = pd.read_table('/data/mwu11/DAVIS-complete/docking_free_models/davis_complete_id50_cluster.tsv', names=['rep', 'seq'])
         self.proteins = df['target_sequence'].values
         self.ligands = df['compound_iso_smiles'].values
         self.affinity = df['y'].values
@@ -56,13 +56,19 @@ class Dataset(Dataset):
 
         if self.split_method == 'random':
             self.split_df = create_fold(df, self.seed, split_frac)
-        elif self.split_method == 'drug':
-            self.split_df = create_fold_setting_cold(df, self.seed, split_frac, 'drug_name')
-        elif self.split_method == 'protein':
+        elif self.split_method == 'drug_name':
+            self.split_df = create_fold_setting_cold(df, self.seed, split_frac, 'drug')
+        elif self.split_method == 'drug_structure':
+            self.split_df = create_new_drug_tanimoto(df, self.seed, split_frac)
+        elif self.split_method == 'protein_modification':
             self.split_df = create_fold_setting_cold(df, self.seed, split_frac, 'protein')
-        elif self.split_method == 'both':
+        elif self.split_method == 'protein_name':
+            self.split_df = create_new_protein_name(df, self.seed, split_frac)
+        elif self.split_method == 'protein_modification_drug_name':
             self.split_df = create_full_ood_set(df, self.seed, split_frac)
-        elif self.split_method == 'seqid':
+        elif self.split_method == 'protein_seqid_drug_structure':
+            self.split_df = create_seq_identity_drug_tanimoto_fold(df, self.mmseqs_seq_clus_df, self.seed, split_frac)
+        elif self.split_method == 'protein_seqid':
             self.split_df = create_seq_identity_fold(df, self.mmseqs_seq_clus_df, self.seed, split_frac)
         elif self.split_method == 'wt_mutation':
             self.split_df = create_wt_mutation_split(df, self.seed, [0.9, 0.1])

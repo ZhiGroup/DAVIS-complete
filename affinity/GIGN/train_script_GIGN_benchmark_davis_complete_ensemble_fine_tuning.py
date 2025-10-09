@@ -70,8 +70,8 @@ def val_ensemble(models, dataloader, device):
     pred = np.concatenate(pred_list, axis=0)
     label = np.concatenate(label_list, axis=0)
 
-    coff = np.corrcoef(pred, label)[0, 1]
-    cindex = get_cindex(pred, label)
+    coff = np.corrcoef(label, pred)[0, 1]
+    cindex = get_cindex(label, pred)
     mse = mean_squared_error(label, pred)
     rmse = np.sqrt(mean_squared_error(label, pred))
     
@@ -94,8 +94,8 @@ def val(model, dataloader, device):
     pred = np.concatenate(pred_list, axis=0)
     label = np.concatenate(label_list, axis=0)
 
-    coff = np.corrcoef(pred, label)[0, 1]
-    cindex = get_cindex(pred, label)
+    coff = np.corrcoef(label, pred)[0, 1]
+    cindex = get_cindex(label, pred)
     mse = mean_squared_error(label, pred)
     rmse = np.sqrt(mean_squared_error(label, pred))
     
@@ -118,10 +118,10 @@ def val_wt_groundtruth_baseline(wt_affinity, dataloader):
     else:
         assert len(label) == len(wt_affinity)
 
-    coff = np.corrcoef(wt_affinity, label)[0, 1]
+    coff = np.corrcoef(label, wt_affinity)[0, 1]
     mse = mean_squared_error(label, wt_affinity)
     rmse = np.sqrt(mean_squared_error(label, wt_affinity))
-    cindex = get_cindex(wt_affinity, label)
+    cindex = get_cindex(label, wt_affinity)
     
     return mse, rmse, coff, cindex
 
@@ -130,7 +130,7 @@ def get_mutation_name(data_df, protein_name):
 
 
 def train_one_model(job_name, model_idx, model, optimizer, criterion, running_loss, model_list,
-                    seed, train_loader, test_loader, device, epochs, logger, save_model):
+                    seed, train_loader, test_loader, device, epochs, save_model):
     """
     Train a single model for 'epochs' epochs and return the best RMSE or any stats you need.
     """
@@ -189,10 +189,10 @@ if __name__ == '__main__':
     # repeats = args.get('repeat')
     early_stop_epoch = args.get("early_stop_epoch")
     # early_stop_epoch = 10
-    logger = TrainLogger(args, cfg, create=True)
+    # logger = TrainLogger(args, cfg, create=True)
     
     parser = ArgumentParser()
-    parser.add_argument('--job_name', type=str, default='GIGN_benchmark_davis_complete_ensemble_fine_tuning', help='job name')
+    parser.add_argument('--job_name', type=str, default='GIGN_ensemble_benchmark_davis_complete_fine_tuning', help='job name')
     parser.add_argument('--gpu', type=int, default=0, help='gpu id')
     parser.add_argument('--data_df', type=str, default='../../data/davis_complete/davis_complete.tsv', help='data of protein and ligand')
     parser.add_argument('--complex_path', type=str, default='../../data/davis_complete/alphafold_structure_kinase_domain', help='the path of the complexes')
@@ -408,7 +408,7 @@ if __name__ == '__main__':
                 continue
             
             models = [GIGN(35, 256).to(device) for _ in range(args_.ensemble_size)]
-            results = read_pickle(f'model/benchmark_wt_mutation_davis_complete_ensemble_testsplit/results_seed_{model_seed}.pkl')
+            results = read_pickle(f'model/davis_complete_wt_mutation/results_seed_{model_seed}.pkl')
             for res in results:
                 model = models[res['model_idx']]
                 load_model_dict(model, res['model_paths'][-1])
@@ -419,11 +419,11 @@ if __name__ == '__main__':
             test_loader = PLIDataLoader(test_set, batch_size=len(test_set), shuffle=False)
             
 
-            logger.info(f"this is the model seed {model_seed}")
-            logger.info(__file__)
-            logger.info(f"split method: {args_.split_method}")
-            logger.info(f"train data: {len(train_set)}")
-            logger.info(f"test data: {len(test_set)}")
+            print(f"this is the model seed {model_seed}")
+            print(__file__)
+            print(f"split method: {args_.split_method}")
+            print(f"train data: {len(train_set)}")
+            print(f"test data: {len(test_set)}")
             
             optimizers = [optim.Adam(model.parameters(), lr=lr, weight_decay=1e-6) for model in models]
             criterions = [nn.MSELoss() for _ in range(args_.ensemble_size)]
@@ -442,8 +442,7 @@ if __name__ == '__main__':
                                     train_loader, 
                                     test_loader, 
                                     device, 
-                                    epochs, 
-                                    logger, 
+                                    epochs,  
                                     save_model))
             with parallel_backend('loky', n_jobs=args_.ensemble_size):
                 results = Parallel()(delayed(train_one_model)(*input_) for input_ in pool_input)
@@ -507,7 +506,7 @@ if __name__ == '__main__':
 
 
             models_original = [GIGN(35, 256).to(device) for _ in range(args_.ensemble_size)]
-            results = read_pickle(f'model/benchmark_wt_mutation_davis_complete_ensemble_testsplit/results_seed_{model_seed}.pkl')
+            results = read_pickle(f'model/davis_complete_wt_mutation/results_seed_{model_seed}.pkl')
             
             for res in results:
                 model = models_original[res['model_idx']]
@@ -537,24 +536,30 @@ if __name__ == '__main__':
                 ratio_prediction = (mut_lig_prediction[1] * mut_lig_prediction[2]) / mut_lig_prediction[0]
                 test_mse_ratio_prediction_baseline, test_rmse_ratio_prediction_baseline, test_rp_ratio_prediction_baseline = val_wt_groundtruth_baseline(ratio_prediction, test_loader)
 
-            test_mse_original, test_rmse_original, test_rp_original, test_cindex_original, pred_original, label = val_ensemble(models_original, test_loader, device)
-            test_mse_finetuning, test_rmse_finetuning, test_rp_finetuning, test_cindex_finetuning, pred_finetuning, label = val_ensemble(models_finetuning, test_loader, device)
-            all_mse_original, all_rmse_original, all_rp_original, all_cindex_original, pred_original_all, label_all = val_ensemble(models_original, all_loader, device)
+            test_mse_original, test_rmse_original, test_rp_original, test_cindex_original, prediction_original, label = val_ensemble(models_original, test_loader, device)
+            test_mse_finetuning, test_rmse_finetuning, test_rp_finetuning, test_cindex_finetuning, prediction_finetuning, label = val_ensemble(models_finetuning, test_loader, device)
+            all_mse_original, all_rmse_original, all_rp_original, all_cindex_original, prediction_original_all, label_all = val_ensemble(models_original, all_loader, device)
             
 
             if args_.split_method == 'different_mutation_same_drug':
                 print(f'label: {label}')
-                print(f'gt_wt: {wt_all_affinity}')
-                print(f'prediction_wt: {wt_all_prediction}')
-                print(f'prediction_original: {pred_original}')
-                print(f'prediction_finetuning: {pred_finetuning}')
+                print(f'label_all: {label_all}')
+                print(f'gt_wt: {wt_test_affinity}')
+                print(f'gt_wt_all: {wt_all_affinity}')
+                print(f'prediction_wt: {wt_test_prediction}')
+                print(f'prediction_original: {prediction_original}')
+                print(f'prediction_finetuning: {prediction_finetuning}')
+                print(f'prediction_original_all: {prediction_original_all}')
 
             elif args_.split_method == 'same_mutation_different_drug':
                 print(f'label: {label}')
+                print(f'label_all: {label_all}')
                 print(f'gt_wt: {wt_test_affinity}')
+                print(f'gt_wt_all: {wt_all_affinity}')
                 print(f'prediction_wt: {wt_test_prediction}')
-                print(f'prediction_original: {pred_original}')
-                print(f'prediction_finetuning: {pred_finetuning}')
+                print(f'prediction_original: {prediction_original}')
+                print(f'prediction_finetuning: {prediction_finetuning}')
+                print(f'prediction_original_all: {prediction_original_all}')
 
             elif args_.split_method == 'different_mutation_different_drug':
                 print(f'label: {label}')
@@ -570,7 +575,7 @@ if __name__ == '__main__':
 
             msg = f"model_seed: {model_seed}, test_mse_original: {test_mse_original:.4f}, test_rmse_original: {test_rmse_original:.4f}, test_rp_original: {test_rp_original:.4f}, test_cindex_original: {test_cindex_original:.4f},\
                     test_mse_finetuning: {test_mse_finetuning:.4f}, test_rmse_finetuning: {test_rmse_finetuning:.4f}, test_rp_finetuning: {test_rp_finetuning:.4f}, test_cindex_finetuning: {test_cindex_finetuning:.4f}"
-            logger.info(msg)
+            print(msg)
             
 
             
