@@ -185,17 +185,17 @@ class GraphDataset(Dataset):
     def __getitem__(self, idx):
 
         if self.split == 'all':
-            return torch.load(self.all_graph_list[idx])
+            return torch.load(self.all_graph_list[idx], weights_only=False)
         elif self.split == 'train':
-            return torch.load(self.train_graph_list[idx])
+            return torch.load(self.train_graph_list[idx], weights_only=False)
         elif self.split == 'test':
-            return torch.load(self.test_graph_list[idx])
+            return torch.load(self.test_graph_list[idx], weights_only=False)
         elif self.split == 'wt_all':
-            return torch.load(self.wt_all_graph_list[idx])
+            return torch.load(self.wt_all_graph_list[idx], weights_only=False)
         elif self.split == 'wt_test':
-            return torch.load(self.wt_test_graph_list[idx])
+            return torch.load(self.wt_test_graph_list[idx], weights_only=False)
         else:
-            raise ValueError(f"Unknown split: {self.split}")
+            raise ValueError(f"Unknown split: {self.split}", weights_only=False)
     
     def get_split(self, split_df):
 

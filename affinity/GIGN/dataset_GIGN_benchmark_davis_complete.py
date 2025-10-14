@@ -14,13 +14,12 @@ from rdkit import RDLogger
 from rdkit import Chem
 from torch_geometric.data import Batch, Data
 import warnings
-from kdbnet.dta_davis_complete import create_fold, create_fold_setting_cold, create_full_ood_set, create_seq_identity_fold, create_wt_mutation_split
+from kdbnet.dta_davis_complete import create_fold, create_fold_setting_cold, create_full_ood_set, create_seq_identity_fold, create_wt_mutation_split, create_new_drug_tanimoto, create_new_protein_name, create_seq_identity_drug_tanimoto_fold
 import argparse
 
 RDLogger.DisableLog('rdApp.*')
 np.set_printoptions(threshold=np.inf)
 warnings.filterwarnings('ignore')
-
 
 
 def one_of_k_encoding(k, possible_values):
@@ -166,16 +165,25 @@ class GraphDataset(Dataset):
         if self.split_method == 'random':
             split_df = create_fold(data_df, self.seed, split_frac)
             self.train_graph_list, self.val_graph_list, self.test_graph_list, self.test_wt_graph_list, self.test_mutation_graph_list = self.get_split(split_df)
-        elif self.split_method == 'drug':
+        elif self.split_method == 'drug_name':
             split_df = create_fold_setting_cold(data_df, self.seed, split_frac, 'drug')
             self.train_graph_list, self.val_graph_list, self.test_graph_list, self.test_wt_graph_list, self.test_mutation_graph_list = self.get_split(split_df)
-        elif self.split_method == 'protein':
+        elif self.split_method == 'drug_structure':
+            split_df = create_new_drug_tanimoto(data_df, self.seed, split_frac)
+            self.train_graph_list, self.val_graph_list, self.test_graph_list, self.test_wt_graph_list, self.test_mutation_graph_list = self.get_split(split_df)
+        elif self.split_method == 'protein_modification':
             split_df = create_fold_setting_cold(data_df, self.seed, split_frac, 'protein')
             self.train_graph_list, self.val_graph_list, self.test_graph_list, self.test_wt_graph_list, self.test_mutation_graph_list = self.get_split(split_df)
-        elif self.split_method == 'both':
+        elif self.split_method == 'protein_name':
+            split_df = create_new_protein_name(data_df, self.seed, split_frac)
+            self.train_graph_list, self.val_graph_list, self.test_graph_list, self.test_wt_graph_list, self.test_mutation_graph_list = self.get_split(split_df)
+        elif self.split_method == 'protein_modification_drug_name':
             split_df = create_full_ood_set(data_df, self.seed, split_frac)
             self.train_graph_list, self.val_graph_list, self.test_graph_list, self.test_wt_graph_list, self.test_mutation_graph_list= self.get_split(split_df)
-        elif self.split_method == 'seqid':
+        elif self.split_method == 'protein_seqid_drug_structure':
+            split_df = create_seq_identity_drug_tanimoto_fold(data_df, self.mmseqs_seq_clus_df, self.seed, split_frac)
+            self.train_graph_list, self.val_graph_list, self.test_graph_list, self.test_wt_graph_list, self.test_mutation_graph_list= self.get_split(split_df)   
+        elif self.split_method == 'protein_seqid':
             split_df = create_seq_identity_fold(data_df, self.mmseqs_seq_clus_df, self.seed, split_frac)
             self.train_graph_list, self.val_graph_list, self.test_graph_list, self.test_wt_graph_list, self.test_mutation_graph_list= self.get_split(split_df)
         elif self.split_method == 'wt_mutation':
@@ -187,15 +195,15 @@ class GraphDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.split == 'train':
-            return torch.load(self.train_graph_list[idx])
+            return torch.load(self.train_graph_list[idx], weights_only=False)
         elif self.split == 'val':
-            return torch.load(self.val_graph_list[idx])
+            return torch.load(self.val_graph_list[idx], weights_only=False)
         elif self.split == 'test':
-            return torch.load(self.test_graph_list[idx]) 
+            return torch.load(self.test_graph_list[idx], weights_only=False)
         elif self.split == 'test_wt':
-            return torch.load(self.test_wt_graph_list[idx])
+            return torch.load(self.test_wt_graph_list[idx], weights_only=False)
         elif self.split == 'test_mutation':
-            return torch.load(self.test_mutation_graph_list[idx])
+            return torch.load(self.test_mutation_graph_list[idx], weights_only=False)
         else:
             raise ValueError(f"Unknown split: {self.split}")
     
@@ -274,57 +282,57 @@ if __name__ == '__main__':
     mmseqs_seq_clus_df= args.mmseqs_seq_clus_df
     data_df = pd.read_csv(data_df, sep='\t')
     
-    drug_train = GraphDataset(data_root, data_df, split_method='drug', split='train', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    drug_val = GraphDataset(data_root, data_df, split_method='drug', split='val', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    drug_test = GraphDataset(data_root, data_df, split_method='drug', split='test', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    drug_test_wt = GraphDataset(data_root, data_df, split_method='drug', split='test_wt', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    drug_test_mutation = GraphDataset(data_root, data_df, split_method='drug', split='test_mutation', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # drug_train = GraphDataset(data_root, data_df, split_method='drug', split='train', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # drug_val = GraphDataset(data_root, data_df, split_method='drug', split='val', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # drug_test = GraphDataset(data_root, data_df, split_method='drug', split='test', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # drug_test_wt = GraphDataset(data_root, data_df, split_method='drug', split='test_wt', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # drug_test_mutation = GraphDataset(data_root, data_df, split_method='drug', split='test_mutation', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
 
-    print(f'split_method: drug')
-    print(f"drug_train: {len(drug_train)}")
-    print(f"drug_val: {len(drug_val)}")
-    print(f"drug_test: {len(drug_test)}")
-    print(f"drug_test_wt: {len(drug_test_wt)}")
-    print(f"drug_test_mutation: {len(drug_test_mutation)}")
+    # print(f'split_method: drug')
+    # print(f"drug_train: {len(drug_train)}")
+    # print(f"drug_val: {len(drug_val)}")
+    # print(f"drug_test: {len(drug_test)}")
+    # print(f"drug_test_wt: {len(drug_test_wt)}")
+    # print(f"drug_test_mutation: {len(drug_test_mutation)}")
 
-    protein_train = GraphDataset(data_root, data_df, split_method='protein', split='train', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    protein_val = GraphDataset(data_root, data_df, split_method='protein', split='val', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    protein_test = GraphDataset(data_root, data_df, split_method='protein', split='test', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    protein_test_wt = GraphDataset(data_root, data_df, split_method='protein', split='test_wt', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    protein_test_mutation = GraphDataset(data_root, data_df, split_method='protein', split='test_mutation', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # protein_train = GraphDataset(data_root, data_df, split_method='protein', split='train', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # protein_val = GraphDataset(data_root, data_df, split_method='protein', split='val', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # protein_test = GraphDataset(data_root, data_df, split_method='protein', split='test', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # protein_test_wt = GraphDataset(data_root, data_df, split_method='protein', split='test_wt', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # protein_test_mutation = GraphDataset(data_root, data_df, split_method='protein', split='test_mutation', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
 
-    print(f'split_method: protein')
-    print(f"protein_train: {len(protein_train)}")
-    print(f"protein_val: {len(protein_val)}")
-    print(f"protein_test: {len(protein_test)}")
-    print(f"protein_test_wt: {len(protein_test_wt)}")
-    print(f"protein_test_mutation: {len(protein_test_mutation)}")
+    # print(f'split_method: protein')
+    # print(f"protein_train: {len(protein_train)}")
+    # print(f"protein_val: {len(protein_val)}")
+    # print(f"protein_test: {len(protein_test)}")
+    # print(f"protein_test_wt: {len(protein_test_wt)}")
+    # print(f"protein_test_mutation: {len(protein_test_mutation)}")
 
-    both_train = GraphDataset(data_root, data_df, split_method='both', split='train', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    both_val = GraphDataset(data_root, data_df, split_method='both', split='val', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    both_test = GraphDataset(data_root, data_df, split_method='both', split='test', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    both_test_wt = GraphDataset(data_root, data_df, split_method='both', split='test_wt', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    both_test_mutation = GraphDataset(data_root, data_df, split_method='both', split='test_mutation', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # both_train = GraphDataset(data_root, data_df, split_method='both', split='train', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # both_val = GraphDataset(data_root, data_df, split_method='both', split='val', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # both_test = GraphDataset(data_root, data_df, split_method='both', split='test', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # both_test_wt = GraphDataset(data_root, data_df, split_method='both', split='test_wt', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # both_test_mutation = GraphDataset(data_root, data_df, split_method='both', split='test_mutation', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
 
-    print(f'split_method: both')
-    print(f"both_train: {len(both_train)}")
-    print(f"both_val: {len(both_val)}")
-    print(f"both_test: {len(both_test)}")
-    print(f"both_test_wt: {len(both_test_wt)}")
-    print(f"both_test_mutation: {len(both_test_mutation)}")
+    # print(f'split_method: both')
+    # print(f"both_train: {len(both_train)}")
+    # print(f"both_val: {len(both_val)}")
+    # print(f"both_test: {len(both_test)}")
+    # print(f"both_test_wt: {len(both_test_wt)}")
+    # print(f"both_test_mutation: {len(both_test_mutation)}")
 
-    seqid_train = GraphDataset(data_root, data_df, split_method='seqid', split='train', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    seqid_val = GraphDataset(data_root, data_df, split_method='seqid', split='val', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    seqid_test = GraphDataset(data_root, data_df, split_method='seqid', split='test', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    seqid_test_wt = GraphDataset(data_root, data_df, split_method='seqid', split='test_wt', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
-    seqid_test_mutation = GraphDataset(data_root, data_df, split_method='seqid', split='test_mutation', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # seqid_train = GraphDataset(data_root, data_df, split_method='seqid', split='train', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # seqid_val = GraphDataset(data_root, data_df, split_method='seqid', split='val', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # seqid_test = GraphDataset(data_root, data_df, split_method='seqid', split='test', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # seqid_test_wt = GraphDataset(data_root, data_df, split_method='seqid', split='test_wt', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
+    # seqid_test_mutation = GraphDataset(data_root, data_df, split_method='seqid', split='test_mutation', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
 
-    print(f'split_method: seqid')
-    print(f"seqid_train: {len(drug_train)}")
-    print(f"seqid_val: {len(drug_val)}")
-    print(f"seqid_test: {len(drug_test)}")
-    print(f"seqid_test_wt: {len(drug_test_wt)}")
-    print(f"seqid_test_mutation: {len(drug_test_mutation)}")
+    # print(f'split_method: seqid')
+    # print(f"seqid_train: {len(drug_train)}")
+    # print(f"seqid_val: {len(drug_val)}")
+    # print(f"seqid_test: {len(drug_test)}")
+    # print(f"seqid_test_wt: {len(drug_test_wt)}")
+    # print(f"seqid_test_mutation: {len(drug_test_mutation)}")
 
     random_train = GraphDataset(data_root, data_df, split_method='random', split='train', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
     random_val = GraphDataset(data_root, data_df, split_method='random', split='val', graph_type='Graph_GIGN', dis_threshold=5, mmseqs_seq_clus_df=mmseqs_seq_clus_df, create=True)
