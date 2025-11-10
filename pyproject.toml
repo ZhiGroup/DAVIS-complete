@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "davis-common"
+version = "0.0.0"
+description = "Shared utilities for DAVIS-complete experiments"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "ZhiGroup" }]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["davis_common*"]

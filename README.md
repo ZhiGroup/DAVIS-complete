@@ -1,5 +1,5 @@
 # DAVIS-complete
-A complete, modification-aware version of the [DAVIS dataset](https://www.nature.com/articles/nbt.1990)
+A complete and modification-aware version of the [DAVIS dataset](https://www.nature.com/articles/nbt.1990)
 by incorporating 4,032 kinase–ligand pairs involving substitutions, insertions, deletions, and phosphorylation events.
 
 The DAVIS-complete benchmark experiment is implemented with Python 3.9.18 and CUDA 11.5 on CentOS Linux 7 (Core), with access to Nvidia A100 (80GB RAM), AMD EPYC 7352 24-Core Processor, and 1TB RAM. 
@@ -15,6 +15,7 @@ pip install scipy
 pip install --no-index pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-1.11.0+cu113.html
 pip install torch_geometric
 python -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
+pip install -e .
 ```
 ## Datasets
 Download the FDA processed data for replicating the benchmark results from [zenodo](https://zenodo.org/records/15391611) and decompress the files
@@ -37,51 +38,48 @@ mv dgraphdta_data data
 cd ../ 
 ```
 
- 
 ## Replicate results
 ### Augmented Dataset Prediction
 For docking-free based methods, the following command is used to train MGraphDTA, DGraphDTA, GraphDTA, AttentionDTA, and GraphDTA to predict binding affinity under different split_methods (drug_name, drug_structure, protein_modification, protein_name, protein_seqid, protein_modification_drug_name, protein_seqid_drug_structure).
 ```
-cd docking_free_models
-python train_script_benchmark.py --split_method both --gpu 3 --model_seeds 0 1 2 3 4 --model_name MGraphDTA
+cd experiments/docking_free/
+python train_script_benchmark.py --split_method drug_name --gpu 0 --model_seeds 0 1 2 3 4 --model_name MGraphDTA
 ```
 For docking-based FDA method, 
 ```
-cd affinity/GIGN
-python train_GIGN_benchmark_davis_complete_ensemble.py --split_method both --gpu 3 --seeds 0 1 2 3 4
+cd experiments/docking_based/affinity/GIGN
+python train_GIGN_benchmark_davis_complete_ensemble.py --split_method drug_name --gpu 0 --seeds 0 1 2 3 4 --job_name davis_complete_drug_name
 ```
 ### Wild-type to modification generalization - Global modification generalization
 For docking-free based methods, 
 ```
-cd docking_free_models
-python train_script_benchmark.py --split_method wt_mutation --gpu 3 --model_seeds 0 1 2 3 4 --model_name MGraphDTA
+cd experiments/docking_free/
+python train_script_benchmark.py --split_method wt_mutation --gpu 0 --model_seeds 0 1 2 3 4 --model_name MGraphDTA
 ```
 For docking-based FDA method, 
 ```
-cd affinity/GIGN
-python train_GIGN_benchmark_davis_complete_ensemble.py --split_method wt_mutation --gpu 3 --seeds 0 1 2 3 4
+cd experiments/docking_based/affinity/GIGN
+python train_GIGN_benchmark_davis_complete_ensemble.py --split_method wt_mutation --gpu 0 --seeds 0 1 2 3 4 --job_name davis_complete_wt_mutation
 ```
 ### Same-ligand, different-modifications (Wild-type to modification generalization & Few-shot modification generalization)
 For docking-free based methods, 
 ```
-cd docking_free_models
-python train_script_fine_tuning.py --split_method different_mutation_same_drug --gpu 3 --model_seeds 0 1 2 3 4 --combination_seed False --epochs 30 --nontruncated_affinity --model_name MGraphDTA 
+cd experiments/docking_free/
+python train_script_fine_tuning.py --split_method different_mutation_same_drug --gpu 0 --model_seeds 0 1 2 3 4 --combination_seed False --epochs 30 --nontruncated_affinity --model_name MGraphDTA 
 ```
 For docking-based FDA method, 
 ```
-cd affinity/GIGN
-python train_script_GIGN_benchmark_davis_complete_ensemble_fine_tuning.py --split_method different_mutation_same_drug --gpu 3 --model_seeds 0 1 2 3 4 --combination_seed False --epochs 30 --lr 5e-3 --nontruncated_affinity
+cd experiments/docking_based/affinity/GIGN
+python train_script_GIGN_benchmark_davis_complete_ensemble_fine_tuning.py --split_method different_mutation_same_drug --gpu 0 --model_seeds 0 1 2 3 4 --combination_seed False --epochs 30 --lr 5e-3 --nontruncated_affinity
 ```
 ### Same-modification, different-ligands (Wild-type to modification generalization & Few-shot modification generalization)
 For docking-free based methods, 
 ```
 cd docking_free_models
-python train_script_fine_tuning.py --split_method same_mutation_different_drug --gpu 3 --model_seeds 0 1 2 3 4 --combination_seed False --lr 1e-4 --epochs 10 --nontruncated_affinity --model_name MGraphDTA 
+python train_script_fine_tuning.py --split_method same_mutation_different_drug --gpu 0 --model_seeds 0 1 2 3 4 --combination_seed False --lr 1e-4 --epochs 10 --nontruncated_affinity --model_name MGraphDTA 
 ```
 For docking-based FDA method, 
 ```
 cd affinity/GIGN
-python train_script_GIGN_benchmark_davis_complete_ensemble_fine_tuning.py --split_method same_mutation_different_drug --gpu 3 --model_seeds 0 1 2 3 4 --combination_seed False --epochs 10 --lr 1e-4 --nontruncated_affinity
+python train_script_GIGN_benchmark_davis_complete_ensemble_fine_tuning.py --split_method same_mutation_different_drug --gpu 0 --model_seeds 0 1 2 3 4 --combination_seed False --epochs 10 --lr 1e-4 --nontruncated_affinity
 ```
-
-

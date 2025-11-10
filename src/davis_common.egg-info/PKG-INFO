@@ -1,0 +1,127 @@
+Metadata-Version: 2.4
+Name: davis-common
+Version: 0.0.0
+Summary: Shared utilities for DAVIS-complete experiments
+Author: ZhiGroup
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+
+# DAVIS-complete
+
+DAVIS-complete includes the [DAVIS dataset](https://www.nature.com/articles/nbt.1990) with 4,032 kinase–ligand pairs that capture substitutions, insertions, deletions, and phosphorylation events. This repository houses data preparation utilities, docking-free and docking-based training pipelines, and analysis scripts for benchmarking binding affinity prediction under multiple generalization regimes.
+
+
+
+## Environment Setup
+
+The reference experiments use Python 3.9.18 and CUDA 11.5. The snippet below reproduces the original environment (PyTorch 1.11.0 with CUDA 11.3). Feel free to adapt package versions if you target different hardware.
+
+```bash
+conda create --name davis-complete python=3.9
+conda activate davis-complete
+conda install conda-forge::pymol-open-source
+conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit=11.3 -c pytorch
+pip install scipy
+pip install --no-index pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-1.11.0+cu113.html
+pip install torch_geometric
+python -m pip install PyYAML "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
+```
+
+## Repository Layout
+
+```
+data/                          # Downloaded raw and processed DAVIS-complete assets
+docs/                          # Extended documentation and design notes
+experiments/
+	docking_based/
+		affinity/                  # GIGN-based FDA docking pipelines
+		diffdock/                  # DiffDock configuration and scripts
+	docking_free/
+		models/docking_free_models # Baseline graph/attention DTA implementations + outputs
+logs/
+	pipelines/                   # Long-running pipeline execution logs
+results/
+	analysis/                    # Post-processed metrics summaries
+	docking_based/               # Docking-based predictions and tables
+	docking_free/                # Docking-free experiment artefacts (placeholder)
+scripts/
+	analysis/                    # Offline analysis notebooks and scripts
+	data/                        # Dataset acquisition helpers
+	docking/                     # Utility scripts shared by docking pipelines
+	folding/                     # Protein input preparation scripts
+```
+
+The training code remains inside the original project folders (for example `experiments/docking_free/models/docking_free_models`) so that module-relative imports continue to work. Logs and artefacts produced by the pipelines now collect under `logs/` and `results/` for easier discovery.
+
+## Data
+
+Download the processed DAVIS-complete data released on Zenodo and unpack it beneath `data/`:
+
+```bash
+git clone https://github.com/ZhiGroup/DAVIS-complete
+cd DAVIS-complete
+mkdir -p data
+cd data
+wget https://zenodo.org/records/15391611/files/davis_complete.tar.gz?download=1 -O davis_complete.tar.gz
+tar -xvzf davis_complete.tar.gz
+```
+
+Some models also expect the DGraphDTA preprocessed assets. Unpack them inside the DGraphDTA directory:
+
+```bash
+cd ../experiments/docking_free/models/docking_free_models/DGraphDTA
+wget https://zenodo.org/records/15391611/files/dgraphdta_data.tar.gz?download=1 -O dgraphdta_data.tar.gz
+tar -xvzf dgraphdta_data.tar.gz
+mv dgraphdta_data data
+```
+
+## Running Experiments
+
+### Docking-free baselines (Graph/Molecule DTA)
+
+```bash
+cd experiments/docking_free/
+python train_script_benchmark.py \
+	--split_method both \
+	--gpu 0 \
+	--model_seeds 0 1 2 3 4 \
+	--model_name MGraphDTA
+```
+
+Fine-tuning experiments live in the same folder. Replace the arguments (for example `--split_method same_mutation_different_drug`) to reproduce the different scenarios documented in the paper. Model checkpoints, logs, and CSV summaries are emitted alongside the scripts and can be archived to `results/docking_free/` if desired.
+
+### Docking-based FDA (GIGN) baseline
+
+```bash
+cd experiments/docking_based/affinity/GIGN
+python train_GIGN_benchmark_davis_complete_ensemble.py \
+	--split_method both \
+	--gpu 0 \
+	--seeds 0 1 2 3 4
+```
+
+Use the fine-tuning entry point (`train_script_GIGN_benchmark_davis_complete_ensemble_fine_tuning.py`) for the same-/cross-modification generalization studies. Outputs are now collated under `experiments/docking_based/affinity/GIGN/save` and the summary CSVs should be moved or symlinked into `results/docking_based/` for long-term storage.
+
+### DiffDock integration
+
+`experiments/docking_based/diffdock` contains the original DiffDock-based workflows. Follow the README within that folder (if present) or mirror the commands above after sourcing the DiffDock environment.
+
+## Analysis
+
+Offline analysis utilities reside in `scripts/analysis/`. For example, the affinity alternation study can be rerun via:
+
+```bash
+python scripts/analysis/affinity_alternation.py
+```
+
+The script reads NPZ outputs from `experiments/docking_based` and `experiments/docking_free` (configurable through environment variables) and records summary statistics in `results/analysis/affinity_alternation_summary.txt`.
+
+## Utilities
+
+- `scripts/data/` contains helpers for downloading augmented, fine-tuning, and wild-type mutation datasets.
+- `scripts/docking/` provides small utilities used across docking pipelines.
+- `scripts/folding/` includes protein input preparation for folding experiments.
+
+Additional onboarding notes, diagrams, or extended documentation can be placed in the `docs/` directory as the project evolves.
+
+
