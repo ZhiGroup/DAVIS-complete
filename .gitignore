@@ -23,6 +23,7 @@ HCAT/
 *inner_model*
 *boltz2*
 *alternation*
+*.out
 run_command
 kdbnet/
 log/
