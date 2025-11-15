@@ -132,7 +132,7 @@ python scripts/train/finetune_AffinityModule.py --split_method same_mutation_dif
 
 ### Citation
 If you find DAVIS-complete useful in your research, please consider citing:
-```
+```bibtex
 @article{davis2011comprehensive,
   title={Comprehensive analysis of kinase inhibitor selectivity},
   author={Davis, Mindy I and Hunt, Jeremy P and Herrgard, Sanna and Ciceri, Pietro and Wodicka, Lisa M and Pallares, Gabriel and Hocker, Michael and Treiber, Daniel K and Zarrinkar, Patrick P},
