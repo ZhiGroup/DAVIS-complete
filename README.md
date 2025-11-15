@@ -129,3 +129,24 @@ export WORKDIR=/absolute/path/to/your/working/directory
 cd boltz/DAVIS/
 python scripts/train/finetune_AffinityModule.py --split_method same_mutation_different_drug  --device 0 --max_epochs 10 --df_path "$WORKDIR/DAVIS-complete/data/davis_complete/davis_complete_with_smiles.tsv" --target_dir "$WORKDIR/boltz/DAVIS/boltz_results_affinity_input/boltz_results_yaml_affinity_input"
 ```
+
+### Citation
+If you find DAVIS-complete useful in your research, please consider citing:
+```
+@article{davis2011comprehensive,
+  title={Comprehensive analysis of kinase inhibitor selectivity},
+  author={Davis, Mindy I and Hunt, Jeremy P and Herrgard, Sanna and Ciceri, Pietro and Wodicka, Lisa M and Pallares, Gabriel and Hocker, Michael and Treiber, Daniel K and Zarrinkar, Patrick P},
+  journal={Nature biotechnology},
+  volume={29},
+  number={11},
+  pages={1046--1051},
+  year={2011},
+  publisher={Nature Publishing Group US New York}
+}
+
+@inproceedings{wutowards,
+  title={Towards precision protein-ligand affinity prediction benchmark: A Complete and Modification-Aware DAVIS Dataset},
+  author={Wu, Ming Hsiu and Xie, Ziqian and Ji, Shuiwang and Zhi, Degui},
+  booktitle={The Thirty-ninth Annual Conference on Neural Information Processing Systems Datasets and Benchmarks Track}
+}
+```
