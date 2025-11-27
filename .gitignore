@@ -28,3 +28,5 @@ run_command
 kdbnet/
 log/
 diffdock/affinity/
+*DB*
+pref*

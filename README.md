@@ -22,7 +22,8 @@ For Boltz-2 installation,
 git clone -b train_affinity_module --single-branch https://github.com/AustinApple/boltz.git
 cd boltz; pip install -e .
 ```
-## DAVIS-complete Dataset Curation
+## DAVIS-complete Dataset
+The dataset can be accessed from [DAVIS-complete Dataset](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/RTQGP1).
 The script of curating the DAVIS-complete dataset is provided in the `scripts/davis_complete_curation/main.ipynb`.
 
 ## Preprocessed Data Download
